@@ -90,7 +90,7 @@ class Describe(Resource):
         :type apis: list or dict
         """
         cls.discovery['apis'].append({
-            'path': '/%s' % resource
+            'path': '/' + resource
             })
 
         if type(apis) is list:
@@ -98,12 +98,28 @@ class Describe(Resource):
         else:
             cls.resources[resource] = [apis]
 
+    @classmethod
+    def declareModel(cls, resource, model):
+        """
+        Declare a model type to the API docs.
+        :param resource: The name of the resource, e.g. 'user'
+        :type resource: str
+        :param model: The model definition object.
+        :type model: dict
+        """
+        cls.models[resource] = model
+
     @Resource.endpoint
     def GET(self, path, params):
         """
         Outputs the API description as a swagger-compliant JSON document.
         """
-        retVal = {}
+        retVal = {
+            'apiVersion': API_VERSION,
+            'swaggerVersion': '1.2',
+            'models': self.__class__.models
+        }
+
         if path:
             resources = self.__class__.resources
             if path[0] in resources:
@@ -115,8 +131,5 @@ class Describe(Resource):
         else:
             retVal['basePath'] = cherrypy.url()
             retVal['apis'] = self.__class__.discovery['apis']
-
-        retVal['apiVersion'] = API_VERSION
-        retVal['swaggerVersion'] = '1.2'
 
         return retVal

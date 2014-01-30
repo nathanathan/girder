@@ -27,21 +27,28 @@ apis.append({
     'operations': [{
         'httpMethod': 'POST',
         'nickname': 'createAssetstore',
-        'responseClass': 'Assetstore',
+        'type': 'Assetstore',
         'summary': 'Create a new assetstore.',
         'parameters': [
             Describe.param('name', "Unique name for the assetstore."),
             Describe.param('type', "Type of the assetstore.",
-                           dataType='integer')
+                           dataType='integer'),
+            Describe.param('root', 'For filesystem assetstores, this is the '
+                           'root directory of the assetstore.',
+                           required=False),
+            Describe.param('db', 'For GridFS assetstores, this is the name of'
+                           'the database to store files inside of.',
+                           required=False)
             ],
         'errorResponses': [
             Describe.errorResponse(),
-            Describe.errorResponse('Write access was denied on the parent', 403)
+            Describe.errorResponse('You are not an administrator.', 403)
             ]
         }, {
         'httpMethod': 'GET',
         'nickname': 'listAssetstores',
-        'responseClass': 'Assetstore',
+        'type': 'array',
+        'items': { '$ref': 'Assetstore' },
         'summary': 'List assetstores.',
         'parameters': [
             Describe.param(
@@ -65,3 +72,43 @@ apis.append({
     })
 
 Describe.declareApi('assetstore', apis=apis)
+
+Describe.declareModel('Assetstore', {
+    'id': 'Assetstore',
+    'properties': {
+        '_id': {
+            'type': 'string',
+            'required': True,
+            'description': 'The resource ID'
+        },
+        'type': {
+            'type': 'integer',
+            'required': True,
+            'description': 'The assetstore type'
+        },
+        'current': {
+            'type': 'boolean',
+            'required': True,
+            'description': 'Whether this is the current assetstore'
+        },
+        'name': {
+            'type': 'string',
+            'required': True
+        },
+        'created': {
+            'type': 'date',
+            'required': True,
+            'description': 'When this assetstore was created'
+        },
+        'root': {
+            'type': 'string',
+            'description': 'For filesystem assetstores, the root directory of '
+                'the assetstore'
+        },
+        'db': {
+            'type': 'string',
+            'description': 'For GridFS assetstores, the database name for the '
+                'file collections to be stored in'
+        }
+    }
+})
