@@ -117,6 +117,7 @@ class Describe(Resource):
         retVal = {
             'apiVersion': API_VERSION,
             'swaggerVersion': '1.2',
+            'produces': ['application/json', 'text/html'],
             'models': self.__class__.models
         }
 
