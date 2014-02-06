@@ -212,6 +212,9 @@ class Resource(ModelImporter):
         from the inner method.
         """
         def wrapper(self, *args, **kwargs):
+            # CORS stuff too...
+            cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+
             try:
                 # First, we should encode any unicode form data down into
                 # UTF-8 so the actual REST classes are always dealing with

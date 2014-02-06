@@ -198,3 +198,12 @@ class User(Resource):
             return self.createUser(params)
         else:
             raise RestException('Unsupported operation.')
+
+
+    @Resource.endpoint
+    def OPTIONS(self, path, params):
+        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
+        cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        cherrypy.response.headers["Access-Control-Allow-Headers"] = "Authorization"
+        cherrypy.response.headers["Access-Control-Max-Age"] = "36000"
+        return {}
