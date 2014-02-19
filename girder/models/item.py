@@ -221,7 +221,13 @@ class Item(Model):
         item['updated'] = datetime.datetime.now()
 
         # Validate and save the item
-        return self.save(item)
+        try :
+            return self.save(item)
+        except Exception as inst:
+            print 'Caught an exception saving item:'
+            print inst
+            return { 'Data save exception': str(inst) }
+
 
     def getMetadata(self, id, user, key=None):
         """

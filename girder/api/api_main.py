@@ -20,6 +20,8 @@
 from v1 import api_docs, assetstore, file, collection, folder, group, item,\
     resource, user
 
+from v1 import remoteconnection
+
 
 class ApiDocs():
     exposed = True
@@ -48,5 +50,8 @@ def _addV1ToNode(node):
     node.v1.item = item.Item()
     node.v1.resource = resource.Resource()
     node.v1.user = user.User()
+
+    rcUrl = '/home/scott/projects/project-backups-scott-wittenburg/scripts/python/cosmoscripts'
+    node.v1.remoteconnection = remoteconnection.RemoteConnection(rcUrl)
 
     return node

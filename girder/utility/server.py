@@ -63,6 +63,9 @@ def setup(test=False):
 
     cherrypy.config.update(appconf)
 
+    # bind to all IPv4 interfaces
+    cherrypy.config.update({'server.socket_host': '0.0.0.0'})
+
     if test:
         # Force the mode to be 'testing'
         cherrypy.config.update({'server': {'mode': 'testing'}})

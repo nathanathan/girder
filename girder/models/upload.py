@@ -86,10 +86,9 @@ class Upload(Model):
                 name=upload['name'], creator={'_id': upload['userId']},
                 folder={'_id': upload['parentId']})
         else:
-            item = self.model('item').load(id=upload['parentId'],
-                                           objectId=True,
-                                           user={'_id': upload['userId']},
-                                           level=AccessType.WRITE)
+            # Uploading into an existing item
+            user = self.model('user').load(id=upload['userId'], objectId=False, force=True)
+            item = self.model('item').load(id=upload['parentId'], objectId=False, force=True)
 
         file = self.model('file').createFile(
             item=item, name=upload['name'], size=upload['size'],

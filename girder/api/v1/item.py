@@ -207,3 +207,9 @@ class Item(Resource):
             return self.updateItem(path[0], user, params)
         elif len(path) == 2 and path[1] == 'metadata':
             return self.addMetadata(path[0], user, params)
+
+    @Resource.endpoint
+    def OPTIONS(self, path, params) :
+        # Needed this to allow web application to to PUT metadata on item
+        cherrypy.response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        return {}
