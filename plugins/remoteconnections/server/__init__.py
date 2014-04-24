@@ -67,6 +67,7 @@ class RemoteConnection(Resource):
         self.route('POST', ('tunnellaunch',), self.sshTunnelLaunch)
         self.route('POST', ('jobschedule',), self.scheduleJob)
         self.route('POST', ('jobstatus',), self.checkJobStatus)
+        self.route('POST', ('jobcleanup',), self.cleanupJob)
         self.route('GET', ('create',), self.createConnection)
         self.route('GET', ('command',), self.sendShellCommand)
         self.route('GET', ('disconnect',), self.disconnect)
@@ -180,11 +181,8 @@ class RemoteConnection(Resource):
 
     #-------------------------------------------------------------------------
     # Use the remotely installed HPCJobScheduler python module to schedule an
-    # HPC job (via qsub).  Return the result, which either contains the job id
-    # or an error message.  Remotely, the command looks like:
-    #
-    # python HPCJobScheduler.py --command submit --qsubprog qsub --numnodes 1 --walltime 5 --extraargs "-q pubnet" --jobscriptpath "./launchpvweb.sh"
-    #
+    # HPC job.  Return the result, which either contains the job id
+    # or an error message.
     #-------------------------------------------------------------------------
     def scheduleJob(self, params):
         # Get POST data parameters
@@ -197,6 +195,7 @@ class RemoteConnection(Resource):
         # Generate a unique id so Girder can keep track of this job
         jobUuid = str(uuid.uuid1())
 
+        # escape quotes around keys/values within the json string
         regex = re.compile('"')
         jobDescriptor = re.sub(regex, '\\\"', jobDescriptor)
 
@@ -205,33 +204,32 @@ class RemoteConnection(Resource):
         conn = self.remoteConnMgr.retrieve(connId)
 
         if conn is not None :
-            print 'I am here!'
-            print 'I am just about to send command: ' + commandStr
             returnTuple = conn.sendCommand(commandStr)
-            print 'It returned me:'
-            print returnTuple
             returnVal = returnTuple[0][0]
             if not returnVal.startswith('ERROR') :
-                # Did not get an error, so I add this unique id to the map
+                # Did not get an error, so I strip ws/newline, add this
+                # unique girder job id to the map, and return to the web
+                # client both the girder job id as well as the hpc assigned
+                # job id.
+                regex = re.compile('^\s+|\s+$')
+                returnVal = re.sub(regex, '', returnVal)
                 self.currentJobsMap[jobUuid] = returnVal
+                return { 'girderJobId': jobUuid, 'hpcJobId': returnVal }
             else :
                 # Got an error, so be sure to remove the residual script file
                 self.cleanupJob({'jobUuid': jobUuid,
                                  'girderDir': girderDir,
                                  'userHomeDir': scriptDir,
                                  'connId': connId})
-            return returnVal
+                return returnVal
+
         else :
             return { 'ERROR': 'No such connection (' + connId + ')' }
 
 
     #-------------------------------------------------------------------------
     # Use the remotely installed HPCJobScheduler python module to check the
-    # status of a job using it's assigned job id to look it up.  The remote
-    # command looks like:
-    #
-    # python HPCJobScheduler.py --command status --qstatprog qstat --jobid 235364
-    #
+    # status of a job using it's assigned job id to look it up.
     #-------------------------------------------------------------------------
     def checkJobStatus(self, params):
         # Get parameters
@@ -243,6 +241,10 @@ class RemoteConnection(Resource):
         # Look up the assigned hpc job id
         hpcJobId = self.currentJobsMap[jobUuid]
 
+        # escape quotes around keys/values within the json string
+        regex = re.compile('"')
+        jobDescriptor = re.sub(regex, '\\\"', jobDescriptor)
+
         commandStr = 'python ' + girderDir + '/HPCJobScheduler.py --command status --scheduledjobid "' + hpcJobId + '" --jobdescriptor "' + jobDescriptor + '"'
 
         conn = self.remoteConnMgr.retrieve(params['connId'])
@@ -253,7 +255,9 @@ class RemoteConnection(Resource):
 
 
     #-------------------------------------------------------------------------
-    #
+    # Use the remotely installed HPCJobScheduler python module to clean up
+    # after a job.  Mainly, this means removing the generated job script file
+    # from the remote file system.
     #-------------------------------------------------------------------------
     def cleanupJob(self, params):
         girderDir = params['girderDir']
@@ -261,13 +265,19 @@ class RemoteConnection(Resource):
         jobUuid = params['jobUuid']
         connId = params['connId']
 
-        commandStr = 'python ' + girderDir + '/HPCJobScheduler.py --command cleanup --scriptdir "scriptDir" --jobuniqueid "' + jobUuid + '"'
+        commandStr = 'python ' + girderDir + '/HPCJobScheduler.py --command cleanup --scriptdir "' + scriptDir + '" --jobuniqueid "' + jobUuid + '"'
+
+        print 'Here is the command I will run to cleanup:'
+        print commandStr
 
         conn = self.remoteConnMgr.retrieve(connId)
+
         if conn is not None :
             returnTuple = conn.sendCommand(commandStr)
+            print 'Here is what I got back from the cleanup command:'
+            print returnTuple
             self.currentJobsMap.pop('jobUuid', None)
-            return { 'resultOutput': returnTuple[0] }
+            return { 'resultOutput': returnTuple }
         else :
             return { 'ERROR': 'No such connection (' + connId + ')' }
 
