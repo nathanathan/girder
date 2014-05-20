@@ -1,0 +1,4 @@
+{
+    "name": "Private item metadata support",
+    "description": "Adds support for metadata not readable using standard access controls."
+}
