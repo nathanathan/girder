@@ -1,0 +1,4 @@
+{
+"name": "SSH Assetstore Plugin",
+"description": "Allows users to access data on remote machines via SSHv2 protocol"
+}
